@@ -7,22 +7,21 @@ class Station
   end
 
   def add_train(train)
-    @trains << train
+    trains << train
   end
 
-  def trains_by_types
-    passenger_trains = @trains.filter { |train| train.type == 'пассажирский' }
-    cargo_trains = @trains.filter { |train| train.type == 'грузовой' }
-    puts "#{passenger_trains.count} пассажирских поездов на станции"
-    puts "#{cargo_trains.count} грузовых поездов на станции"
+  def trains_by_types(type)
+    trains.filter{ |train| train.type == type }.count
   end
 
   def go_train(train)
-    @trains.delete(train)
+    trains.delete(train)
   end
 end
 
 class Route
+  attr_reader :start_station
+  attr_reader :end_station
   attr_reader :stations
 
   def initialize(start_station, end_station)
@@ -32,18 +31,20 @@ class Route
   end
 
   def add_station(station)
-    @stations.insert(-2, station)
+    stations.insert(-2, station)
   end
 
   def remove_station(station)
-    @stations.delete(station)
+    stations.delete(station)
   end
 end
 
 class Train
-  attr_reader :speed
-  attr_reader :wagon_count
+  attr_accessor :speed
+  attr_accessor :wagon_count
   attr_reader :type
+  attr_accessor :route
+  attr_reader :current_station_index
 
   def initialize(number, type, wagon_count)
     @speed = 0
@@ -53,44 +54,47 @@ class Train
   end
 
   def speed_up
-    @speed += 10
+    self.speed += 10
   end
 
   def speed_down
-    @speed -= 10 if @speed > 0
+    self.speed -= 10 if speed > 0
   end
 
   def add_wagon
-    @wagon_count += 1 if @speed == 0
+    self.wagon_count += 1 if speed == 0
   end
 
   def remove_wagon
-    @wagon_count -= 1 if @speed == 0
+    self.wagon_count -= 1 if speed == 0
   end
 
   def add_route(route)
-    @routes = route
-    @station = route.stations[0]
+    self.route = route
+    @current_station_index = 0
+  end
+
+  def next_station
+    routes.stations[current_station_index + 1]
+  end
+
+  def previous_station
+    routes.stations[current_station_index - 1] if current_station_index >= 0
+  end
+
+  def current_station
+    routes.stations[current_station_index]
   end
 
   def move_forward
-    prev_station_index = @routes.stations.find_index(@station)
-    if prev_station_index < @routes.stations.count
-      @station = @routes.stations[prev_station_index + 1]
-    end
+    self.current_station_index += 1 if next_station
   end
 
   def move_backward
-    prev_station_index = @routes.stations.find_index(@station)
-    if prev_station_index > 0
-      @station = @routes.stations[prev_station_index - 1]
-    end
+    self.current_station_index -= 1 if previous_station
   end
 
-  def station_around
-    station_index = @routes.stations.find_index(@station)
-    puts "Предыдущая станция #{station_index <= 0 ? @routes.stations[station_index] : @routes.stations[station_index - 1]}"
-    puts "Текущая станция #{@routes.stations[station_index]}"
-    puts "Следующая станция #{station_index >= @routes.stations.count ? @routes.stations[station_index] : @routes.stations[station_index + 1]}"
+  def stations
+    [previous_station, current_station, next_station]
   end
 end
